@@ -86,7 +86,7 @@ const FileUploader: React.FC = () => {
         dangerouslyAllowBrowser: true,
       });
 
-      let transcribedText = "";
+      let extractedText = "";
 
       if (file.type.includes("audio")) {
         setConversionProgress(30);
@@ -100,26 +100,41 @@ const FileUploader: React.FC = () => {
           model: "whisper-1",
         });
 
-        transcribedText = response.text;
+        extractedText = response.text;
       } else if (file.type.includes("pdf") || file.type.includes("word") || file.type.includes("document")) {
-        // For document files, we'll need to handle them differently
-        // This would typically involve using a document processing API
-        // For now, we'll show a message about document support
-        toast.info("Document processing is coming soon!");
-        setIsConverting(false);
-        setConversionProgress(0);
-        return;
+        setConversionProgress(30);
+
+        // Read the file content
+        const fileContent = await file.text();
+
+        const response = await openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a document processing assistant. Extract and format the main content from the provided document while preserving its structure.",
+            },
+            {
+              role: "user",
+              content: fileContent,
+            },
+          ],
+          temperature: 0.3,
+        });
+
+        extractedText = response.choices[0]?.message?.content || "";
       }
 
       setConversionProgress(90);
-      setConvertedText(transcribedText);
+      setConvertedText(extractedText);
 
       // Add to history
       addToHistory({
         fileName: file.name,
         fileType: file.type,
         fileSize: file.size,
-        convertedText: transcribedText,
+        convertedText: extractedText,
       });
 
       setConversionProgress(100);
