@@ -109,29 +109,21 @@ const FileUploader: React.FC = () => {
           file: file,
           model: "whisper-1",
           prompt: `
-          Transcribe the following audio call.
+          Transcribe the following audio call. It's a sales conversation between a sales representative and a customer.
 
-      Requirements:
+Requirements:
 
-      Include timestamps at the start of each speaker’s sentence (e.g., [00:01:12])
+Include timestamps at the start of each speaker’s sentence (e.g., [00:01:12])
 
+          
           `,
           response_format: "verbose_json",
         });
 
-        // If segments are available, format with timestamps and speaker labels
+        // If segments are available, format with timestamps
         if (response.segments && Array.isArray(response.segments)) {
           extractedText = response.segments
-            .map((seg: any) => {
-              // Attempt to infer speaker from Whisper's speaker_labels or use a simple heuristic
-              // If Whisper does not provide speaker labels, default to alternating speakers as a fallback
-              let speaker = seg.speaker || "";
-              if (!speaker) {
-                // Simple heuristic: alternate speakers (not accurate, but a fallback)
-                speaker = seg.id % 2 === 0 ? "Sales Rep" : "Customer";
-              }
-              return `[${new Date(seg.start * 1000).toISOString().substr(11, 8)}] ${speaker}: ${seg.text.trim()}`;
-            })
+            .map((seg: any) => `[${new Date(seg.start * 1000).toISOString().substr(11, 8)}] ${seg.text.trim()}`)
             .join("\n");
         } else {
           extractedText = response.text;
