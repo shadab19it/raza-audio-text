@@ -10,12 +10,23 @@ import OpenAI from "openai";
 const ACCEPTED_FILE_TYPES = {
   "audio/mpeg": [".mp3"],
   "audio/wav": [".wav"],
-  "application/pdf": [".pdf"],
-  "application/msword": [".doc"],
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"],
+  "audio/x-wav": [".wav"],
+  "audio/mp3": [".mp3"],
+  "audio/x-m4a": [".m4a"],
+  "audio/aac": [".aac"],
+  "audio/flac": [".flac"],
+  "audio/ogg": [".ogg"],
+  "audio/x-ms-wma": [".wma"],
+  "audio/webm": [".webm"],
+  "audio/amr": [".amr"],
+  "audio/3gpp": [".3gp"],
+  "audio/3gpp2": [".3g2"],
+  "audio/midi": [".midi", ".mid"],
+  "audio/x-aiff": [".aiff", ".aif"],
+  "audio/vnd.wave": [".wav"],
 };
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 const FileUploader: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -91,39 +102,40 @@ const FileUploader: React.FC = () => {
       if (file.type.includes("audio")) {
         setConversionProgress(30);
 
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("model", "whisper-1");
-
+        // OpenAI Whisper API does not natively support a system prompt,
+        // but you can provide an initial prompt for context using the 'prompt' parameter.
+        // For example, you can guide the transcription style or context:
         const response = await openai.audio.transcriptions.create({
           file: file,
           model: "whisper-1",
+          prompt: `
+          Transcribe the following audio call.
+
+      Requirements:
+
+      Include timestamps at the start of each speaker’s sentence (e.g., [00:01:12])
+
+          `,
+          response_format: "verbose_json",
         });
 
-        extractedText = response.text;
-      } else if (file.type.includes("pdf") || file.type.includes("word") || file.type.includes("document")) {
-        setConversionProgress(30);
-
-        // Read the file content
-        const fileContent = await file.text();
-
-        const response = await openai.chat.completions.create({
-          model: "gpt-3.5-turbo",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a document processing assistant. Extract and format the main content from the provided document while preserving its structure.",
-            },
-            {
-              role: "user",
-              content: fileContent,
-            },
-          ],
-          temperature: 0.3,
-        });
-
-        extractedText = response.choices[0]?.message?.content || "";
+        // If segments are available, format with timestamps and speaker labels
+        if (response.segments && Array.isArray(response.segments)) {
+          extractedText = response.segments
+            .map((seg: any) => {
+              // Attempt to infer speaker from Whisper's speaker_labels or use a simple heuristic
+              // If Whisper does not provide speaker labels, default to alternating speakers as a fallback
+              let speaker = seg.speaker || "";
+              if (!speaker) {
+                // Simple heuristic: alternate speakers (not accurate, but a fallback)
+                speaker = seg.id % 2 === 0 ? "Sales Rep" : "Customer";
+              }
+              return `[${new Date(seg.start * 1000).toISOString().substr(11, 8)}] ${speaker}: ${seg.text.trim()}`;
+            })
+            .join("\n");
+        } else {
+          extractedText = response.text;
+        }
       }
 
       setConversionProgress(90);
@@ -155,7 +167,7 @@ const FileUploader: React.FC = () => {
     <div className='w-full'>
       <div className='mb-6'>
         <h2 className='text-lg font-medium mb-2'>Upload File</h2>
-        <p className='text-gray-600 dark:text-gray-400 text-sm mb-4'>Supported formats: MP3, WAV, PDF, DOC, DOCX (max 25MB)</p>
+        <p className='text-gray-600 dark:text-gray-400 text-sm mb-4'>Supported formats: MP3, WAV, PDF, DOC, DOCX (max 50MB)</p>
 
         {!file ? (
           <div
