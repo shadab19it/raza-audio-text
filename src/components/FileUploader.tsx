@@ -93,7 +93,7 @@ const FileUploader: React.FC = () => {
       setConversionProgress(10);
 
       const openai = new OpenAI({
-        apiKey: apiKey,
+        apiKey: apiKey || localStorage.getItem("openai_api_key") || "",
         dangerouslyAllowBrowser: true,
       });
 
