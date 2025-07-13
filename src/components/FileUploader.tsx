@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import OpenAI from "openai";
 
 const ACCEPTED_FILE_TYPES = {
+  // Audio formats
   "audio/mpeg": [".mp3"],
   "audio/wav": [".wav"],
   "audio/x-wav": [".wav"],
@@ -24,6 +25,19 @@ const ACCEPTED_FILE_TYPES = {
   "audio/midi": [".midi", ".mid"],
   "audio/x-aiff": [".aiff", ".aif"],
   "audio/vnd.wave": [".wav"],
+
+  // Video formats
+  "video/mp4": [".mp4"],
+  "video/x-msvideo": [".avi"],
+  "video/quicktime": [".mov"],
+  "video/x-matroska": [".mkv"],
+  "video/webm": [".webm"],
+  "video/3gpp": [".3gp"],
+  "video/3gpp2": [".3g2"],
+  "video/x-ms-wmv": [".wmv"],
+  "video/x-flv": [".flv"],
+  "video/mpeg": [".mpeg", ".mpg"],
+  "video/ogg": [".ogv"],
 };
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024;
