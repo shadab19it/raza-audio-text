@@ -119,9 +119,12 @@ const FileUploader: React.FC = () => {
         // OpenAI Whisper API does not natively support a system prompt,
         // but you can provide an initial prompt for context using the 'prompt' parameter.
         // For example, you can guide the transcription style or context:
+
+        const correctedBlob = new Blob([file], { type: "audio/mp3" });
         const response = await openai.audio.transcriptions.create({
-          file: file,
+          file: correctedBlob,
           model: "whisper-1",
+
           prompt: `
           Transcribe the following audio call. It's a sales conversation between a sales representative and a customer.
 
